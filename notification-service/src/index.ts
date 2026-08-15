@@ -1,4 +1,8 @@
 import express from "express";
+import { WebSocketServer, WebSocket } from "ws";
+
+const INTERVAL_MIN = 30;
+const CHECK_INTERVAL_MS = 60 * 1000;
 
 interface Anomaly {
   restraunt: string;
@@ -6,18 +10,25 @@ interface Anomaly {
   baseline_issues: number;
 }
 
-const recentAnomalies = new Map<string, Date>();
+const port = 1234;
+const wss = new WebSocketServer({ port, host: "0.0.0.0" });
 
-const INTERVAL_MIN = 30;
+wss.on("connection", (ws) => {
+  ws.send("Client connected!");
+});
+
+function broadcast(data: Anomaly) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(data));
+  });
+}
+
+const recentAnomalies = new Map<string, Date>();
 
 const app = express();
 
-app.get("/health", (req, res) => {
-  res.send({ status: "ok" });
-});
-
-app.get("/check-anomalies", async (req, res) => {
-  const response = await fetch("http://localhost:8000/anomalies");
+async function checkAnomalies() {
+  const response = await fetch("http://ingestion-service:8000/anomalies");
   const anomalies = (await response.json()) as Anomaly[];
 
   anomalies.forEach((anomaly: Anomaly) => {
@@ -30,13 +41,25 @@ app.get("/check-anomalies", async (req, res) => {
       !lastAlertTime ||
       currentTime.getTime() - lastAlertTime.getTime() > intervalMilSec
     ) {
-      console.log("ALERT:", anomaly);
+      broadcast(anomaly);
 
       recentAnomalies.set(anomaly.restraunt, new Date());
     }
   });
 
+  return anomalies;
+}
+
+app.get("/health", (req, res) => {
+  res.send({ status: "ok" });
+});
+
+app.get("/check-anomalies", async (req, res) => {
+  const anomalies = await checkAnomalies();
+
   res.send(anomalies);
 });
+
+setInterval(checkAnomalies, CHECK_INTERVAL_MS);
 
 app.listen(3000);

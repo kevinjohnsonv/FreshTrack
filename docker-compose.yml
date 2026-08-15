@@ -38,5 +38,14 @@ services:
       DATABASE_URL: postgresql://freshtrack:freshtrack@postgres:5432/freshtrack
       REDIS_URL: redis://redis:6379
 
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "3000:3000"
+      - "1234:1234"
+    depends_on:
+      ingestion-service:
+        condition: service_started
+
 volumes:
   pgdata:
