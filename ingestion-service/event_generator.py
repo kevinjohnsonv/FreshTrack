@@ -81,11 +81,11 @@ def order_generator():
 
     orders_to_be_del = set()
 
-    while order_count < 10 or len(orders) > 0:
+    while order_count < 300 or len(orders) > 0:
 
         current_time = datetime.now()
 
-        if current_time > new_order_time and order_count < 10:
+        if current_time > new_order_time and order_count < 300:
             push_order(create_order(order_count))
             
             order_count += 1

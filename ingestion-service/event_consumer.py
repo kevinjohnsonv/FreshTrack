@@ -1,16 +1,9 @@
 import json
 import redis
 import psycopg2
+from db import db
 
 r = redis.Redis(host='localhost', port=6379)
-
-db = psycopg2.connect(
-    host='localhost',
-    database='freshtrack',
-    user='freshtrack',
-    password='freshtrack',
-    port='5432'
-)
 
 def create_event_table():
     cur = db.cursor()
