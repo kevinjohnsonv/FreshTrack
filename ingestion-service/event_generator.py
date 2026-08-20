@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 import redis
 
@@ -28,6 +28,7 @@ ISSUE_EVENT_TIMES = {
 }
 ORDER_CREATION_INTERVAL = (1,3)
 TERMINAL_STATES = ['delivery_completed', 'order_cancelled']
+ORDERS_GENERATED = 500
 
 r = redis.Redis(host='localhost', port=6379)
 
@@ -36,7 +37,7 @@ orders = {}
 def create_order(order_number: int):
     order_event = create_json_event(order_number, EVENTS[0], random.choice(RESTRAUNTS))
 
-    orders[order_number] = {'event_type': order_event['event_type'], 'restraunt': order_event['restraunt'], 'ready_at': datetime.now()}
+    orders[order_number] = {'event_type': order_event['event_type'], 'restaurant': order_event['restaurant'], 'ready_at': datetime.now(timezone.utc)}
 
     return (order_event)
 
@@ -51,25 +52,25 @@ def advance_order(order_number: int):
     
     order_event_idx = EVENTS.index(orders[order_number]['event_type'])
 
-    order_event = create_json_event(order_number, EVENTS[order_event_idx + 1], orders[order_number]['restraunt'])
+    order_event = create_json_event(order_number, EVENTS[order_event_idx + 1], orders[order_number]['restaurant'])
 
     orders[order_number]['event_type'] = order_event['event_type']
 
     if order_event['event_type'] in EVENT_TIMES:
-        orders[order_number]['ready_at'] = datetime.now() + timedelta(seconds=random.randint(EVENT_TIMES[order_event['event_type']][0], EVENT_TIMES[order_event['event_type']][1]))
+        orders[order_number]['ready_at'] = datetime.now(timezone.utc) + timedelta(seconds=random.randint(EVENT_TIMES[order_event['event_type']][0], EVENT_TIMES[order_event['event_type']][1]))
 
     return (order_event)
 
-def create_issue_event(order_number: int, issue_event: str, restraunt: str):
-    return create_json_event(order_number, issue_event, restraunt)
+def create_issue_event(order_number: int, issue_event: str, restaurant: str):
+    return create_json_event(order_number, issue_event, restaurant)
 
-def create_json_event(order_number: int, event_type: str, restraunt: str):
+def create_json_event(order_number: int, event_type: str, restaurant: str):
     order_event = {}
 
     order_event['order_id'] = 'ft-' + str(order_number)
     order_event['event_type'] = event_type
-    order_event['restraunt'] = restraunt
-    order_event['created_at'] = datetime.now().replace(microsecond=0).isoformat()
+    order_event['restaurant'] = restaurant
+    order_event['created_at'] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
     return order_event
 
@@ -77,20 +78,20 @@ def order_generator():
 
     order_count = 1
 
-    new_order_time = datetime.now() + timedelta(seconds=random.randint(ORDER_CREATION_INTERVAL[0], ORDER_CREATION_INTERVAL[1]))
+    new_order_time = datetime.now(timezone.utc) + timedelta(seconds=random.randint(ORDER_CREATION_INTERVAL[0], ORDER_CREATION_INTERVAL[1]))
 
     orders_to_be_del = set()
 
-    while order_count < 300 or len(orders) > 0:
+    while order_count < ORDERS_GENERATED + 1 or len(orders) > 0:
 
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc)
 
-        if current_time > new_order_time and order_count < 300:
+        if current_time > new_order_time and order_count < ORDERS_GENERATED + 1:
             push_order(create_order(order_count))
             
             order_count += 1
 
-            new_order_time = datetime.now() + timedelta(seconds=random.randint(ORDER_CREATION_INTERVAL[0], ORDER_CREATION_INTERVAL[1]))
+            new_order_time = datetime.now(timezone.utc) + timedelta(seconds=random.randint(ORDER_CREATION_INTERVAL[0], ORDER_CREATION_INTERVAL[1]))
         
         for order_number, details in orders.items():
 
@@ -105,7 +106,7 @@ def order_generator():
                             details['ready_at'] += timedelta(seconds=random.randint(ISSUE_EVENT_TIMES[issue_event][0], ISSUE_EVENT_TIMES[issue_event][1]))
                         else:
                             details['event_type'] = 'order_cancelled'
-                        push_order(create_issue_event(order_number, issue_event, details['restraunt']))
+                        push_order(create_issue_event(order_number, issue_event, details['restaurant']))
                     else:
                         push_order(advance_order(order_number))
                 else:

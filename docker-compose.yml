@@ -37,6 +37,7 @@ services:
     environment:
       DATABASE_URL: postgresql://freshtrack:freshtrack@postgres:5432/freshtrack
       REDIS_URL: redis://redis:6379
+      DB_HOST: postgres
 
   notification-service:
     build: ./notification-service

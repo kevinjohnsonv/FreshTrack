@@ -1,7 +1,8 @@
 import psycopg2
+import os
     
 db = psycopg2.connect(
-        host='postgres',
+        host=os.environ.get('DB_HOST', 'localhost'),
         database='freshtrack',
         user='freshtrack',
         password='freshtrack',

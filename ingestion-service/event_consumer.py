@@ -13,7 +13,7 @@ def create_event_table():
             id SERIAL PRIMARY KEY,
             order_id VARCHAR(30),
             event_type VARCHAR(30),
-            restraunt VARCHAR(30),
+            restaurant VARCHAR(30),
             created_at TIMESTAMPTZ
         );
     """)
@@ -25,9 +25,9 @@ def upload_order(order_event: dict):
     cur = db.cursor()
 
     cur.execute("""
-        INSERT INTO order_events (order_id, event_type, restraunt, created_at)
+        INSERT INTO order_events (order_id, event_type, restaurant, created_at)
         VALUES (%s, %s, %s, %s)
-    """, (order_event['order_id'], order_event['event_type'], order_event['restraunt'], order_event['created_at'],))
+    """, (order_event['order_id'], order_event['event_type'], order_event['restaurant'], order_event['created_at'],))
 
     db.commit()
     cur.close()
