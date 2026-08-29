@@ -21,6 +21,23 @@ def create_event_table():
     db.commit()
     cur.close()
 
+def create_alert_history_table():
+    cur = db.cursor()
+    
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS alert_history(
+            id SERIAL PRIMARY KEY,
+            message TEXT,
+            restaurant VARCHAR(30),
+            severity VARCHAR(20),
+            created_at TIMESTAMPTZ
+        )
+    """)
+
+    db.commit()
+
+    cur.close()
+
 def upload_order(order_event: dict):
     cur = db.cursor()
 
@@ -36,6 +53,7 @@ def upload_order(order_event: dict):
 def event_consumer():
 
     create_event_table()
+    create_alert_history_table()
 
     while True:
         

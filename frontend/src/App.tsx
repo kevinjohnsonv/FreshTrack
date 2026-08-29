@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import RestaurantSummaries from "./components/RestaurantSummaries";
 import { AnomalyFeed } from "./components/AnomalyFeed";
+import RecentAnomalyKPIFeed from "./components/RecentAnomalyKPIFeed";
 
 interface Summary {
   restaurant: string;
@@ -30,11 +31,12 @@ const App = () => {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col w-6xl p-10 gap-6">
-        <h2 className="font-bold text-xl">FreshTrack</h2>
-        <AnomalyFeed />
+      <div className="flex flex-col max-w-6xl h-2/3 p-10 gap-6">
+        <h2 className=" text-xl">FreshTrack</h2>
+        <RecentAnomalyKPIFeed />
         <RestaurantSummaries summaries={restaurantSummaries} />
       </div>
+      <AnomalyFeed />
     </div>
   );
 };

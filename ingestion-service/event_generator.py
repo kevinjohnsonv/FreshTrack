@@ -28,7 +28,7 @@ ISSUE_EVENT_TIMES = {
 }
 ORDER_CREATION_INTERVAL = (1,3)
 TERMINAL_STATES = ['delivery_completed', 'order_cancelled']
-ORDERS_GENERATED = 500
+ORDERS_GENERATED = 30
 
 r = redis.Redis(host='localhost', port=6379)
 
@@ -120,4 +120,5 @@ def order_generator():
 
         orders_to_be_del.clear()
 
-order_generator()
+if __name__ == '__main__':
+    order_generator()

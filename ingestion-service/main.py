@@ -2,6 +2,13 @@ from fastapi import FastAPI
 from db import db
 from psycopg2.extras import RealDictCursor
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+class AlertItem(BaseModel):
+    message: str
+    restaurant: str
+    severity: str
+    time: str
 
 
 app = FastAPI()
@@ -42,6 +49,32 @@ def get_order_summary():
 
     cur.execute("""
         SELECT restaurant, COUNT(*) as order_count FROM order_events WHERE created_at > (NOW() - INTERVAL '1 hour') AND event_type='order_created' GROUP BY restaurant;
+    """)
+
+    results = cur.fetchall()
+
+    cur.close()
+    db.commit()
+
+    return results
+
+@app.post('/alerts')
+def post_alerts(data: AlertItem):
+    cur = db.cursor()
+
+    cur.execute("""
+        INSERT INTO alert_history (message, restaurant, severity, created_at) VALUES (%s, %s, %s, %s)
+    """, (data.message, data.restaurant, data.severity, data.time))
+
+    db.commit()
+    cur.close()
+
+@app.get('/alerts')
+def get_alert_history():
+    cur = db.cursor(cursor_factory=RealDictCursor)
+
+    cur.execute("""
+        SELECT message, restaurant, severity, created_at FROM alert_history ORDER BY created_at DESC LIMIT 25;
     """)
 
     results = cur.fetchall()
